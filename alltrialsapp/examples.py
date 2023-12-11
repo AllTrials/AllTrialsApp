@@ -7,7 +7,10 @@ import psycopg2
 import pandas as pd
 from psycopg2.extensions import connection
 
-
+"""
+Database connection parameters.
+TODO:  Hardcoded for now, but should be moved to a config file.
+"""
 DB_PARAMS: Dict[str, Union[str, int]] = {
     'dbname': 'aact',
     'user': 'wesserg',
