@@ -53,8 +53,7 @@ def get_query_completion(aact_query: str) -> str:
 
     client = OpenAI(
         # This is the default and can be omitted
-        #api_key=os.environ.get("OPENAI_API_KEY"),
-        api_key = "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"
+        api_key=os.environ.get("OPENAI_API_KEY"),
     )
 
     aact_query_completion = client.chat.completions.create(
