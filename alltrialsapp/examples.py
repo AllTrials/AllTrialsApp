@@ -36,8 +36,8 @@ def get_query_completion(aact_query: str) -> str:
     the text input into a query that can be used to query the aact database.
     """    
     prompt_prefix = """
-    You are an sql query assistant. You have deep knowledge of the aact clinical trials database.
-    You are responding to a user data request inserted in textbox on a webapp. 
+    You are an sql query assistant. You have deep knowledge of the aact clinical trials database tables and schema.
+    You are responding to a user data request provided in a text format. 
     User intends to query the AACT database. User might not know sql. 
     Your job is to convert the  provided text to a valid sql query to the aact postgres database. 
     At your disposal are the following tables from the aact database: 
@@ -48,7 +48,11 @@ def get_query_completion(aact_query: str) -> str:
     - return all columns.
     - limit the number of rows returned to 1000.
     
-    Here is the user provided text:
+    Task:
+    Pleace convert the user provided text below to a valid sql query to the aact database. 
+
+    User provided text:
+    
     """
 
     client = OpenAI(
