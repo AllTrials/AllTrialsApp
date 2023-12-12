@@ -64,6 +64,7 @@ def get_query_completion(aact_query: str, n_tries :int = 10) -> str:
     
     It is critical that the query you propose uses the correctly named tables and corresponding columns in the aact ctgov database.
     It is critical that the query is case sensitive to acronyms and abbreviations.
+    It is crtical that you only return the sql query and not the context.
     
     At your disposal are the following tables from the aact database: 
     [studies, brief_summaries, calculated_values, eligibilities, participant_flows, designs, detailed_descriptions]
