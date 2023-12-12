@@ -50,7 +50,6 @@ def get_query_completion(aact_query: str, n_tries :int = 10) -> str:
     the text input into a query that can be used to query the aact database.
     """    
     prompt_prefix = """
-    Set model temperature to 0.8
     Here is the context for the tasks to follow.
     
     Context:
@@ -89,6 +88,7 @@ def get_query_completion(aact_query: str, n_tries :int = 10) -> str:
                     "content": f"{prompt_prefix}{aact_query}",
                 }
             ],
+            temperature=0.9,
             model="gpt-3.5-turbo",
         )
         # test if the aact_query is a valid query:
