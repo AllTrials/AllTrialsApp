@@ -52,21 +52,23 @@ def get_query_completion(aact_query: str, n_tries :int = 10) -> str:
     prompt_prefix = """
     Set model temperature to 0.8
     Here is the context for the tasks to follow.
-    Context:
-    You are an sql query assistant. You have deep knowledge of the AACT clinical trials database tables and schema.
     
-    You are responding to a user data request.
-    User intends to query the AACT database but has limites knowledge of the database schema and tables and sql language. 
-    Your job is to convert the user provided text to a valid sql query to the aact postgres database.
+    Context:
+    You are an sql query assistant. 
+    You have deep knowledge of the AACT clinical trials database, tables and schemas.
+    
+    You are responding to a user data request on a web app.
+    User intends to query the AACT database but has limited knowledge of the database schemas, tables and sql language. 
+    
+    Your job is to convert the text provided by the user to a valid sql query to the aact postgres database.
+    
     It is critical that the query you propose uses the correctly named tables and corresponding columns in the aact ctgov database.
     It is critical that the query is case sensitive to acronyms and abbreviations.
+    
     At your disposal are the following tables from the aact database: 
     [studies, brief_summaries, calculated_values, eligibilities, participant_flows, designs, detailed_descriptions]
     Unless directed differently use ctgov schema, return all columns and limit the number of rows returned to 1000.
     
-    Task:
-    Convert the user provided text below to a valid sql query to the aact database. 
-
     User provided text:
     
     """
