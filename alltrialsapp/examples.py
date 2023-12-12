@@ -58,7 +58,8 @@ def get_query_completion(aact_query: str, n_tries :int = 10) -> str:
     You are responding to a user data request.
     User intends to query the AACT database but has limites knowledge of the database schema and tables and sql language. 
     Your job is to convert the user provided text to a valid sql query to the aact postgres database.
-    It is critical that the query you propose uses the correctly named tables and columns in the aact ctgov database.
+    It is critical that the query you propose uses the correctly named tables and corresponding columns in the aact ctgov database.
+    It is critical that the query is case sensitive to acronyms and abbreviations.
     At your disposal are the following tables from the aact database: 
     [studies, brief_summaries, calculated_values, eligibilities, participant_flows, designs, detailed_descriptions]
     Unless directed differently use ctgov schema, return all columns and limit the number of rows returned to 1000.
@@ -69,6 +70,8 @@ def get_query_completion(aact_query: str, n_tries :int = 10) -> str:
     User provided text:
     
     """
+    ##It is also important that the query is flexible enough to synonims and abbreviations for the searched phrase.
+    
     aact_query_msg_content = None
     for n in tqdm(range(n_tries)):
         client = OpenAI(

@@ -42,6 +42,31 @@ Under this url you can try our free text search.
 
 It is our first attempt to incorporate chatGPT like features via the openai python package. 
 
-Upon hitting the "search" button the app will perform up to 10 attempts to generate a valid query to the database and it if finds a valid query it will return a downloadable dataframe
+Upon hitting the "search" button the app will perform up to 10 attempts to generate a valid query to the database and it if finds a valid query it will return a downloadable dataframe.
+
+This is still very much imperfect and requires better prompt engineering. Current prompt looks as follows:
+
+
+    Set model temperature to 0.8
+    Here is the context for the tasks to follow.
+    Context:
+    You are an sql query assistant. You have deep knowledge of the AACT clinical trials database tables and schema.
+    
+    You are responding to a user data request.
+    User intends to query the AACT database but has limites knowledge of the database schema and tables and sql language. 
+    Your job is to convert the user provided text to a valid sql query to the aact postgres database.
+    It is critical that the query you propose uses the correctly named tables and corresponding columns in the aact ctgov database.
+    It is critical that the query is case sensitive to acronyms and abbreviations.
+    At your disposal are the following tables from the aact database: 
+    [studies, brief_summaries, calculated_values, eligibilities, participant_flows, designs, detailed_descriptions]
+    Unless directed differently use ctgov schema, return all columns and limit the number of rows returned to 1000.
+    
+    Task:
+    Convert the user provided text below to a valid sql query to the aact database. 
+
+    User provided text:
+    
+
+, if you have any idea how to improve it, feel free to add your statements:
 
 Good luck, have fun.
