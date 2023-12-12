@@ -3,3 +3,10 @@ fastapi
 uvicorn
 pandas
 pyscopg2
+numpy
+openai
+pyscopg2-binary
+python-multipart
+urlib
+io
+```

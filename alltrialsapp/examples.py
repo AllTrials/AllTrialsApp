@@ -8,7 +8,8 @@ import pandas as pd
 from psycopg2.extensions import connection
 import os
 from openai import OpenAI
-
+from datetime import datetime as dt
+from tqdm import tqdm
 """
 Database connection parameters.
 TODO:  Hardcoded for now, but should be moved to a config file.
@@ -27,51 +28,72 @@ def check_aact_query(aact_query: str) -> bool:
     This function checks if the aact_query is a valid sql query
     to the aact database.
     """
+    print(f"Checking query: \n{aact_query}")
+    
+    try:
+        conn = get_aact_connection()
+        cursor = conn.cursor()
+        cursor.execute(aact_query)
+        result = cursor.fetchall()
+        conn.close()
+        print("Success \n")
+        return True
+    
+    except:
+        print("Failed to get data: Trying a different approach... \n")
+        return False
+    
 
-    return True
-
-def get_query_completion(aact_query: str) -> str:
+def get_query_completion(aact_query: str, n_tries :int = 10) -> str:
     """ 
     This function used a text input and openain text completion to convert
     the text input into a query that can be used to query the aact database.
     """    
     prompt_prefix = """
-    You are an sql query assistant. You have deep knowledge of the aact clinical trials database tables and schema.
-    You are responding to a user data request provided in a text format. 
-    User intends to query the AACT database. User might not know sql. 
-    Your job is to convert the  provided text to a valid sql query to the aact postgres database. 
+    Set model temperature to 0.8
+    Here is the context for the tasks to follow.
+    Context:
+    You are an sql query assistant. You have deep knowledge of the AACT clinical trials database tables and schema.
+    
+    You are responding to a user data request.
+    User intends to query the AACT database but has limites knowledge of the database schema and tables and sql language. 
+    Your job is to convert the user provided text to a valid sql query to the aact postgres database.
+    It is critical that the query you propose uses the correctly named tables and columns in the aact ctgov database.
     At your disposal are the following tables from the aact database: 
-    [studies, conditions, brief_summaries, calculated_values]
-    If not specified differently in the text, assume the following additional information:
-    - query the studies table.
-    - query the ctgov schema.
-    - return all columns.
-    - limit the number of rows returned to 1000.
+    [studies, brief_summaries, calculated_values, eligibilities, participant_flows, designs, detailed_descriptions]
+    Unless directed differently use ctgov schema, return all columns and limit the number of rows returned to 1000.
     
     Task:
-    Pleace convert the user provided text below to a valid sql query to the aact database. 
+    Convert the user provided text below to a valid sql query to the aact database. 
 
     User provided text:
     
     """
+    aact_query_msg_content = None
+    for n in tqdm(range(n_tries)):
+        client = OpenAI(
+            # This is the default and can be omitted
+            api_key=os.environ.get("OPENAI_API_KEY"),
+        )
 
-    client = OpenAI(
-        # This is the default and can be omitted
-        api_key=os.environ.get("OPENAI_API_KEY"),
-    )
-
-    aact_query_completion = client.chat.completions.create(
-        messages=[
-            {
-                "role": "user",
-                "content": f"{prompt_prefix}{aact_query}",
-            }
-        ],
-        model="gpt-3.5-turbo",
-    )
-    # test if the aact_query is a valid query:
-    aact_query = aact_query_completion.choices[0].message.content
-    return aact_query
+        aact_query_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"{prompt_prefix}{aact_query}",
+                }
+            ],
+            model="gpt-3.5-turbo",
+        )
+        # test if the aact_query is a valid query:
+        aact_query_msg_content = aact_query_completion.choices[0].message.content
+        if check_aact_query(aact_query_msg_content):
+            break
+    if n == n_tries:
+        print("Could not convert the text to a valid sql query.")
+        return False
+    else:    
+        return aact_query_msg_content
 
 
 def get_aact_connection(db_params: Dict[str, Union[str, int]] = DB_PARAMS) -> connection:
