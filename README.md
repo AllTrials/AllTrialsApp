@@ -44,7 +44,7 @@ It is our first attempt to incorporate chatGPT like features via the openai pyth
 
 Upon hitting the "search" button the app will perform up to 10 attempts to generate a valid query to the database and it if finds a valid query it will return a downloadable dataframe.
 
-This is still very much imperfect and requires better prompt engineering. Current prompt looks as follows:
+This is still very much imperfect and requires better prompt engineering. Current baseline prompt looks as follows:
 
 
     Set model temperature to 0.8
@@ -69,6 +69,9 @@ This is still very much imperfect and requires better prompt engineering. Curren
     
     User provided text:
     
+It then is improved with the medprompt approach as listed here:
+    
+    https://www.microsoft.com/en-us/research/blog/steering-at-the-frontier-extending-the-power-of-prompting/
 
 , if you have any idea how to improve it, feel free to add your statements:
 

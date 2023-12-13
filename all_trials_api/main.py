@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Response, Form
 from fastapi.responses import HTMLResponse  # Import HTMLResponse
 import urllib.parse
-
+import html
 from alltrialsapp.base import get_studies, get_user_data, get_query_completion
 app = FastAPI()
 
@@ -87,7 +87,7 @@ async def example():
     return Response(content=html_content, media_type="text/html")
 
 
-@app.get("/text_box/", response_class=HTMLResponse)
+@app.get("/textbox", response_class=HTMLResponse)
 def home():
     return """
     <html>
@@ -96,6 +96,15 @@ def home():
         <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+        <style>
+            /* Optional CSS for styling the textarea */
+            #text_form textarea {
+                width: 400px; /* Set the initial width to your desired size */
+                min-height: 100px; /* Set the minimum height to allow expansion */
+                padding: 8px; /* Adjust padding for better appearance */
+                font-size: 16px; /* Adjust font size if needed */
+            }
+        </style>
         <script>
             $(document).ready(function() {
                 $('#text_form').submit(function(event) {
@@ -110,13 +119,19 @@ def home():
                         }
                     });
                 });
+                // Prevent form submission on Enter key press within textarea
+                $('#text_form textarea').keypress(function(e) {
+                    if (e.which === 13 && !e.shiftKey) {
+                        e.preventDefault();
+                    }
+                });
             });
         </script>
     </head>
     <body>
         <h3>Tell us what you want to search for in the clinical trials world?</h3>
         <form id="text_form">
-            <input type="text" name="input_text">
+            <textarea name="input_text" style="width: 400px; min-height: 100px;"></textarea> <!-- Adjust width and height -->
             <button type="submit">Search</button>
         </form>
         <div id="result"></div>
@@ -130,16 +145,20 @@ async def process_text(input_text: str = Form(...)):
     # Perform actions with the input text to get DataFrame (For demonstration purposes, assuming df is obtained)
     print(input_text)
     aact_query = get_query_completion(input_text)
-    print(aact_query)# Perform actions with the input text
+    print(aact_query)  # Perform actions with the input text
     df = get_user_data(aact_query=aact_query)
 
     df_html = df.to_html(classes="compact-table")
     encoded_aact_query = urllib.parse.quote_plus(aact_query)
     csv_route = f"/download_csv?aact_query={encoded_aact_query}"  # Route to download CSV
 
+    # Function to escape special HTML characters in the query
+    escaped_query = html.escape(aact_query)
+
     html_content = f"""
-    <h4>Search for: '{input_text}'</h4>
-    <p>Resulting query: '{aact_query}'</p>
+    <h4>RESULTING QUERY:</h4>
+    <pre><code style="background-color: #f0f0f0">{escaped_query}</code></pre>
+    <button onclick="copyToClipboard()">Copy to Clipboard</button>
     <div>
         <a href="{csv_route}" download="result.csv"><button>Download as CSV</button></a>
     </div>
@@ -148,11 +167,27 @@ async def process_text(input_text: str = Form(...)):
         $(document).ready(function() {{
             $('#result_data table').DataTable(); // Enable DataTable on the table inside result_data div
         }});
+
+        function copyToClipboard() {{
+            const queryText = document.querySelector('pre code').textContent;
+            const el = document.createElement('textarea');
+            el.value = queryText;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            alert('Copied to clipboard: ' + queryText);
+        }}
     </script>
     """
 
     # Return the DataFrame HTML content as the response
-    return html_content
+    return HTMLResponse(content=html_content)
+
+
+    # Return the DataFrame HTML content as the response
+    return HTMLResponse(content=html_content)
+
 
 
 @app.get("/download_csv", response_class=Response)
