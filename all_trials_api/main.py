@@ -160,7 +160,7 @@ async def process_text(input_text: str = Form(...)):
     <pre><code style="background-color: #f0f0f0">{escaped_query}</code></pre>
     <button onclick="copyToClipboard()">Copy to Clipboard</button>
     <div>
-        <a href="{csv_route}" download="result.csv"><button>Download as CSV</button></a>
+        <a href="{csv_route}" download="result.csv"><button>Download search results as CSV</button></a>
     </div>
     <div id="result_data">{df_html}</div>
         <script>
