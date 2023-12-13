@@ -73,9 +73,7 @@ PROMPTS_DICT = {
 
     {USER_TRIGGER}\n
     """
-
 }
-    
 
 
 def check_aact_query(aact_query: str) -> bool:
@@ -92,7 +90,10 @@ def check_aact_query(aact_query: str) -> bool:
         result = cursor.fetchall()
         conn.close()
         print("Success \n")
-        return True
+        if len(result) > 0:
+            return True
+        else:
+            assert False
     
     except:
         print("Failed to get data: Trying a different approach... \n")
@@ -106,7 +107,8 @@ def get_query_completion(aact_query: str, n_tries :int = 10) -> str:
     """    
     prompt_prefix = PROMPTS_DICT["medprompt"]
     ##It is also important that the query is flexible enough to synonims and abbreviations for the searched phrase.
-    
+    prompt = f"{prompt_prefix}{aact_query}"
+    print(prompt)
     aact_query_msg_content = None
     for n in tqdm(range(n_tries)):
         client = OpenAI(
@@ -118,7 +120,7 @@ def get_query_completion(aact_query: str, n_tries :int = 10) -> str:
             messages=[
                 {
                     "role": "user",
-                    "content": f"{prompt_prefix}{aact_query}",
+                    "content": prompt,
                 }
             ],
             temperature=0.9,
