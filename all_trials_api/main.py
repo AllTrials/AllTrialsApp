@@ -1,10 +1,8 @@
-import pandas as pd
 from fastapi import FastAPI, Response, Form
 from fastapi.responses import HTMLResponse  # Import HTMLResponse
-import io
 import urllib.parse
 
-from alltrialsapp.examples import get_studies, get_user_data, get_query_completion
+from alltrialsapp.base import get_studies, get_user_data, get_query_completion
 app = FastAPI()
 
 
@@ -14,7 +12,7 @@ async def root():
     return {"message": "Hello World"}
 
 EXAMPLE_TEXT = """
-Please show me all studies that have reached second phase.
+Please show me all studies related to ALS that have reached second phase.
 """
 
 # This is an example of a path parameter and query parameters
@@ -89,7 +87,7 @@ async def example():
     return Response(content=html_content, media_type="text/html")
 
 
-@app.get("/textbox", response_class=HTMLResponse)
+@app.get("/text_box/", response_class=HTMLResponse)
 def home():
     return """
     <html>
@@ -126,6 +124,7 @@ def home():
     </html>
     """
 
+
 @app.post("/process_text", response_class=HTMLResponse)
 async def process_text(input_text: str = Form(...)):
     # Perform actions with the input text to get DataFrame (For demonstration purposes, assuming df is obtained)
@@ -154,6 +153,7 @@ async def process_text(input_text: str = Form(...)):
 
     # Return the DataFrame HTML content as the response
     return html_content
+
 
 @app.get("/download_csv", response_class=Response)
 async def download_csv(aact_query: str):

@@ -21,6 +21,61 @@ DB_PARAMS: Dict[str, Union[str, int]] = {
     'host': 'aact-db.ctti-clinicaltrials.org',
     'port': 5432  # Default PostgreSQL port
 }
+USER_TRIGGER = "User provided text: \n"
+EXAMPLE_ALS = f"""{USER_TRIGGER}
+    I want to check out all clinical trials that are related to ALS that have reached at least phase 3\n_rows_limit
+
+    Correct sample answer:\n
+    SELECT *
+    FROM ctgov.studies
+    WHERE (brief_title ILIKE '% ALS %' OR brief_title ILIKE 'ALS %' OR brief_title ILIKE '% ALS' OR brief_title = 'ALS')
+        AND (brief_title ILIKE '%amyotrophic lateral sclerosis%' OR brief_title ILIKE 'amyotrophic lateral sclerosis%' OR brief_title ILIKE '%amyotrophic lateral sclerosis' OR brief_title = 'amyotrophic lateral sclerosis')
+        AND (phase ILIKE '%Phase 3%' OR phase ILIKE '%Phase 4%)
+    LIMIT 1000;
+    """
+    
+
+
+BASELINE_PROMPT = """
+    Here is the context for the tasks to follow.
+    
+    Context:
+    You are an sql query assistant. \n
+    You have deep knowledge of the AACT clinical trials database, tables and schemas.\n
+    
+    You are responding to a user data request on a web app.\n
+    User intends to query the AACT database but has limited knowledge of the database schemas, tables and sql language. \n
+    
+    Your job is to convert the text provided by the user to a valid sql query to the aact postgres database.\n
+    
+    It is critical that the query you propose uses the correctly named tables and corresponding columns in the aact ctgov database.
+    It is critical that the query is case sensitive to acronyms and abbreviations.
+    It is critical that you only return the sql query and not the context.\n
+    
+    At your disposal are the following tables from the aact database: 
+    [studies, brief_summaries, calculated_values, eligibilities, participant_flows, designs, detailed_descriptions]
+    Unless directed differently use ctgov schema, return all columns and limit the number of rows returned to 1000. \n
+    """
+
+PROMPTS_DICT = {
+    "default":  f"{BASELINE_PROMPT}{USER_TRIGGER}",
+    "medprompt": f"""{BASELINE_PROMPT} \n
+    To achieve the sound response I want you to conduct the following steps as you complete the task:
+    1. In Context learning: Look at the example of simple plausible solution below:
+    {EXAMPLE_ALS} \n
+    2. Chain of thought: Look at the user provided text and try to understand what the user wants to achieve.
+    a) What are the key terms user asks about, what are the key disease or drug terms?
+    b) Do the terms contain acronyms that should be exapnded or are there synonyms that should be also included?
+    c) Which tables in aact database are relevant to the user request and which columns in those tables could be relevant?
+    3. Ensambling: Construct 5 possible solutions to the user request in the form of sql queries.
+    4. Aggregation: Comapre the 5 proposed solutions and select the one that is most common and most likely to be correct.
+    5. Report only the final solution in the form of the sql query. \n
+
+    {USER_TRIGGER}\n
+    """
+
+}
+    
 
 
 def check_aact_query(aact_query: str) -> bool:
@@ -49,29 +104,7 @@ def get_query_completion(aact_query: str, n_tries :int = 10) -> str:
     This function used a text input and openain text completion to convert
     the text input into a query that can be used to query the aact database.
     """    
-    prompt_prefix = """
-    Here is the context for the tasks to follow.
-    
-    Context:
-    You are an sql query assistant. 
-    You have deep knowledge of the AACT clinical trials database, tables and schemas.
-    
-    You are responding to a user data request on a web app.
-    User intends to query the AACT database but has limited knowledge of the database schemas, tables and sql language. 
-    
-    Your job is to convert the text provided by the user to a valid sql query to the aact postgres database.
-    
-    It is critical that the query you propose uses the correctly named tables and corresponding columns in the aact ctgov database.
-    It is critical that the query is case sensitive to acronyms and abbreviations.
-    It is crtical that you only return the sql query and not the context.
-    
-    At your disposal are the following tables from the aact database: 
-    [studies, brief_summaries, calculated_values, eligibilities, participant_flows, designs, detailed_descriptions]
-    Unless directed differently use ctgov schema, return all columns and limit the number of rows returned to 1000.
-    
-    User provided text:
-    
-    """
+    prompt_prefix = PROMPTS_DICT["medprompt"]
     ##It is also important that the query is flexible enough to synonims and abbreviations for the searched phrase.
     
     aact_query_msg_content = None
