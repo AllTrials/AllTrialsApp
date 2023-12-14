@@ -79,10 +79,10 @@ To achieve a sound response, conduct the following steps as you complete the tas
 1. In-Context Learning: Examine this example of a simple plausible solution:
 {EXAMPLE_ALS}\n
 2. Chain of Thought: Review the user-provided text and comprehend the user's intent.
-   a) Identify key terms and disease/drug references.
-   b) Expand acronyms and consider synonyms.
-   c) Determine relevant tables and columns in the AACT database.
-
+    a) What are the key terms user asks about, what are the key disease or drug terms?
+    b) Do the terms contain acronyms that should be exapnded or are there synonyms that should be also included?
+    c) Which tables in aact database are relevant to the user request and which columns in those tables could be relevant?
+    d) What logical operators should be used to combine the terms and columns to best match user input?
 3. Assemble: Develop 5 potential solutions to the user request in SQL query format.
 
 4. Aggregation: Compare the 5 proposed solutions and select the most common and likely correct one.
