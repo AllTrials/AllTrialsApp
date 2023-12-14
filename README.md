@@ -35,8 +35,13 @@ You can change the default parameters by changing the url as follows:
 
 This would fetch the first 100 records from conditions table ensuring the ctgov schema
 
-## Text query and download button
+## Free text query and download button
 > http://127.0.0.1:8000/textbox
+
+This feature uses chatGPT features and medprompt to conduct sql queries for you.
+**To use the textbox feature you will have to setup an openAI API KEY**
+Follow the instruction below to get the API KEY working
+> https://platform.openai.com/docs/quickstart?context=python
 
 Under this url you can try our free text search. 
 

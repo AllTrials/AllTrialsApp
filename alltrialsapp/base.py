@@ -21,19 +21,6 @@ DB_PARAMS: Dict[str, Union[str, int]] = {
     'host': 'aact-db.ctti-clinicaltrials.org',
     'port': 5432  # Default PostgreSQL port
 }
-USER_TRIGGER = "User provided text: \n"
-EXAMPLE_ALS = f"""{USER_TRIGGER}
-    I want to check out all clinical trials that are related to ALS that have reached at least phase 3\n_rows_limit
-
-    Correct sample answer:\n
-    SELECT *
-    FROM ctgov.studies
-    WHERE (brief_title ILIKE '% ALS %' OR brief_title ILIKE 'ALS %' OR brief_title ILIKE '% ALS' OR brief_title = 'ALS')
-        AND (brief_title ILIKE '%amyotrophic lateral sclerosis%' OR brief_title ILIKE 'amyotrophic lateral sclerosis%' OR brief_title ILIKE '%amyotrophic lateral sclerosis' OR brief_title = 'amyotrophic lateral sclerosis')
-        AND (phase ILIKE '%Phase 3%' OR phase ILIKE '%Phase 4%)
-    LIMIT 100;
-    """
-USEFUL_TABLES = ['studies','brief_summaries', 'calculated_values', 'eligibilities', 'participant_flows', 'designs', 'detailed_descriptions']
 
 USEFUL_COLUMNS = [
     'completion_date_type', 'completion_date', 'primary_completion_month_year',
@@ -50,46 +37,60 @@ USEFUL_COLUMNS = [
     'source_class'
 ]
 
+USEFUL_TABLES = ['studies','brief_summaries', 'calculated_values', 'eligibilities', 'participant_flows', 'designs', 'detailed_descriptions']
+
+USER_TRIGGER = "User provided text:\n"
+
+EXAMPLE_ALS = f"""{USER_TRIGGER}
+I want to check out all clinical trials related to ALS that have reached at least phase 3.
+
+Correct sample answer:
+
+SELECT *
+FROM ctgov.studies
+WHERE (brief_title ILIKE '% ALS %' OR brief_title ILIKE 'ALS %' OR brief_title ILIKE '% ALS' OR brief_title = 'ALS')
+    AND (brief_title ILIKE '%amyotrophic lateral sclerosis%' OR brief_title ILIKE 'amyotrophic lateral sclerosis%' OR brief_title ILIKE '%amyotrophic lateral sclerosis' OR brief_title = 'amyotrophic lateral sclerosis')
+    AND (phase ILIKE '%Phase 3%' OR phase ILIKE '%Phase 4%')
+LIMIT 100;
+"""
+
 BASELINE_PROMPT = f"""
-    Here is the context for the tasks to follow.
-    
-    Context:
-    You are an sql query assistant.
-    You have deep knowledge of the AACT clinical trials database, tables and schemas.
-    
-    You are responding to a user data request on a web app.
-    User intends to query the AACT database but has limited knowledge of the database schemas, tables and sql language.
-    
-    Your job is to convert the text provided by the user to a valid sql query to the aact postgres database.
-    
-    It is critical that the query you propose uses the correctly named tables and corresponding columns in the aact ctgov database.
-    It is critical that the query is case sensitive to acronyms and abbreviations.
-    It is critical that you only return the sql query and not the context.
-    
-    At your disposal are the following tables from the aact database: 
-    {USEFUL_TABLES}
-    Unless directed differently use ctgov schema, return all columns and limit the number of rows returned to 100.
-    """
+Here is the context for the tasks to follow:
+
+Context:
+You are an SQL query assistant with deep knowledge of the AACT clinical trials database, tables, and schemas.
+
+You are responding to a user data request on a web app. The user intends to query the AACT database but has limited knowledge of the database schemas, tables, and SQL language.
+
+Your job is to convert the text provided by the user to a valid SQL query for the AACT PostgreSQL database.
+
+It is critical that the query you propose uses the correctly named tables and corresponding columns in the AACT CTGOV database.
+It is critical that the query is case-sensitive to acronyms and abbreviations.
+It is critical that you only return the SQL query and not the context.
+
+At your disposal are the following tables from the AACT database: {USEFUL_TABLES}
+Unless directed differently, use the CTGOV schema, return all columns, and limit the number of rows returned to 100.
+"""
 
 PROMPTS_DICT = {
-    "default":  f"{BASELINE_PROMPT}{USER_TRIGGER}",
-    "medprompt": f"""{BASELINE_PROMPT} \n
-    To achieve the sound response I want you to conduct the following steps as you complete the task:
-    1. In Context learning: Look at the example of simple plausible solution below:
-    {EXAMPLE_ALS} \n
-    2. Chain of thought: Look at the user provided text and try to understand what the user wants to achieve.
-    a) What are the key terms user asks about, what are the key disease or drug terms?
-    b) Do the terms contain acronyms that should be exapnded or are there synonyms that should be also included?
-    c) Which tables in aact database are relevant to the user request and which columns in those tables could be relevant?
+    "default": f"{BASELINE_PROMPT}{USER_TRIGGER}",
+    "medprompt": f"""{BASELINE_PROMPT}\n
+To achieve a sound response, conduct the following steps as you complete the task:
+1. In-Context Learning: Examine this example of a simple plausible solution:
+{EXAMPLE_ALS}\n
+2. Chain of Thought: Review the user-provided text and comprehend the user's intent.
+   a) Identify key terms and disease/drug references.
+   b) Expand acronyms and consider synonyms.
+   c) Determine relevant tables and columns in the AACT database.
 
-    3. Ensambling: Construct 5 possible solutions to the user request in the form of sql queries.
+3. Assemble: Develop 5 potential solutions to the user request in SQL query format.
 
-    4. Aggregation: Comapre the 5 proposed solutions and select the one that is most common and most likely to be correct.
+4. Aggregation: Compare the 5 proposed solutions and select the most common and likely correct one.
 
-    5. Report only the final solution in the form of the sql query.
+5. Report only the final solution in the form of an SQL query.
 
-    {USER_TRIGGER}\n
-    """
+{USER_TRIGGER}\n
+"""
 }
 
 def remove_limit_from_sql(sql_query: str) -> str:
