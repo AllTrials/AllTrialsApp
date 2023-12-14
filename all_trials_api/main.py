@@ -1,9 +1,13 @@
 from fastapi import FastAPI, Response, Form
 from fastapi.responses import HTMLResponse  # Import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 import urllib.parse
 import html
 from alltrialsapp.base import get_studies, get_user_data, get_query_completion, remove_limit_from_sql
 app = FastAPI()
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 
 # This is the root path
@@ -85,8 +89,6 @@ async def example():
     """
     # Return HTML content as response
     return Response(content=html_content, media_type="text/html")
-
-
 @app.get("/textbox", response_class=HTMLResponse)
 def home():
     return """
@@ -104,6 +106,15 @@ def home():
                 padding: 8px; /* Adjust padding for better appearance */
                 font-size: 16px; /* Adjust font size if needed */
             }
+
+            /* CSS for positioning the image */
+            #logo {
+                position: absolute;
+                top: 10px; /* Adjust the top position */
+                right: 10px; /* Adjust the right position */
+                width: 200px; /* Adjust the width of the image */
+                height: auto; /* Maintain aspect ratio */
+            }
         </style>
         <script>
             $(document).ready(function() {
@@ -115,7 +126,11 @@ def home():
                         data: $('#text_form').serialize(),
                         success: function(response) {
                             $('#result').html(response);
-                            $('#result_data').DataTable(); // Enable DataTable on the result
+                            $('#result_data').DataTable({
+                                "paging": false, // Disable pagination if not needed
+                                "ordering": true, // Enable sorting
+                                "order": [] // Disable default sorting
+                            }); // Enable DataTable on the result
                         }
                     });
                 });
@@ -129,6 +144,9 @@ def home():
         </script>
     </head>
     <body>
+        <!-- Image tag to display the PNG image -->
+        <img id="logo" src="/static/ct_sbm_720.png" alt="Logo">
+        
         <h3>Tell us what you want to search for in the clinical trials world?</h3>
         <form id="text_form">
             <textarea name="input_text" style="width: 400px; min-height: 100px;"></textarea> <!-- Adjust width and height -->
@@ -142,6 +160,7 @@ def home():
     </body>
     </html>
     """
+
 
 @app.post("/process_text", response_class=HTMLResponse)
 async def process_text(input_text: str = Form(...), use_short_list: bool = Form(...)):
