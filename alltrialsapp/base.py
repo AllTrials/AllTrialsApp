@@ -31,30 +31,44 @@ EXAMPLE_ALS = f"""{USER_TRIGGER}
     WHERE (brief_title ILIKE '% ALS %' OR brief_title ILIKE 'ALS %' OR brief_title ILIKE '% ALS' OR brief_title = 'ALS')
         AND (brief_title ILIKE '%amyotrophic lateral sclerosis%' OR brief_title ILIKE 'amyotrophic lateral sclerosis%' OR brief_title ILIKE '%amyotrophic lateral sclerosis' OR brief_title = 'amyotrophic lateral sclerosis')
         AND (phase ILIKE '%Phase 3%' OR phase ILIKE '%Phase 4%)
-    LIMIT 1000;
+    LIMIT 100;
     """
-    
+USEFUL_TABLES = ['studies','brief_summaries', 'calculated_values', 'eligibilities', 'participant_flows', 'designs', 'detailed_descriptions']
 
+USEFUL_COLUMNS = [
+    'completion_date_type', 'completion_date', 'primary_completion_month_year',
+    'primary_completion_date_type', 'primary_completion_date', 'target_duration',
+    'study_type', 'acronym', 'baseline_population', 'brief_title', 'official_title',
+    'overall_status', 'last_known_status', 'phase', 'enrollment', 'enrollment_type',
+    'source', 'limitations_and_caveats', 'number_of_arms', 'number_of_groups',
+    'why_stopped', 'has_expanded_access', 'expanded_access_type_individual',
+    'expanded_access_type_intermediate', 'expanded_access_type_treatment',
+    'has_dmc', 'is_fda_regulated_drug', 'is_fda_regulated_device',
+    'is_unapproved_device', 'is_ppsd', 'is_us_export', 'biospec_retention',
+    'biospec_description', 'ipd_time_frame', 'ipd_access_criteria', 'ipd_url',
+    'plan_to_share_ipd', 'plan_to_share_ipd_description', 'created_at', 'updated_at',
+    'source_class'
+]
 
-BASELINE_PROMPT = """
+BASELINE_PROMPT = f"""
     Here is the context for the tasks to follow.
     
     Context:
-    You are an sql query assistant. \n
-    You have deep knowledge of the AACT clinical trials database, tables and schemas.\n
+    You are an sql query assistant.
+    You have deep knowledge of the AACT clinical trials database, tables and schemas.
     
-    You are responding to a user data request on a web app.\n
-    User intends to query the AACT database but has limited knowledge of the database schemas, tables and sql language. \n
+    You are responding to a user data request on a web app.
+    User intends to query the AACT database but has limited knowledge of the database schemas, tables and sql language.
     
-    Your job is to convert the text provided by the user to a valid sql query to the aact postgres database.\n
+    Your job is to convert the text provided by the user to a valid sql query to the aact postgres database.
     
     It is critical that the query you propose uses the correctly named tables and corresponding columns in the aact ctgov database.
     It is critical that the query is case sensitive to acronyms and abbreviations.
-    It is critical that you only return the sql query and not the context.\n
+    It is critical that you only return the sql query and not the context.
     
     At your disposal are the following tables from the aact database: 
-    [studies, brief_summaries, calculated_values, eligibilities, participant_flows, designs, detailed_descriptions]
-    Unless directed differently use ctgov schema, return all columns and limit the number of rows returned to 1000. \n
+    {USEFUL_TABLES}
+    Unless directed differently use ctgov schema, return all columns and limit the number of rows returned to 100.
     """
 
 PROMPTS_DICT = {
@@ -67,13 +81,35 @@ PROMPTS_DICT = {
     a) What are the key terms user asks about, what are the key disease or drug terms?
     b) Do the terms contain acronyms that should be exapnded or are there synonyms that should be also included?
     c) Which tables in aact database are relevant to the user request and which columns in those tables could be relevant?
+
     3. Ensambling: Construct 5 possible solutions to the user request in the form of sql queries.
+
     4. Aggregation: Comapre the 5 proposed solutions and select the one that is most common and most likely to be correct.
-    5. Report only the final solution in the form of the sql query. \n
+
+    5. Report only the final solution in the form of the sql query.
 
     {USER_TRIGGER}\n
     """
 }
+
+def remove_limit_from_sql(sql_query: str) -> str:
+    # Find the position of the LIMIT clause
+    limit_index = sql_query.upper().rfind('LIMIT')
+
+    # If LIMIT clause exists, remove it from the query
+    if limit_index != -1:
+        # Find the position of the end of the LIMIT clause
+        limit_end = sql_query.find(';', limit_index)
+
+        # If LIMIT clause is at the end, remove it along with the preceding space
+        if limit_end == -1:
+            return sql_query[:limit_index].rstrip()
+
+        # Remove the LIMIT clause along with the preceding space and trailing space or semicolon
+        return sql_query[:limit_index].rstrip() + sql_query[limit_end:]
+
+    # If LIMIT clause doesn't exist, return the original query
+    return sql_query
 
 
 def check_aact_query(aact_query: str) -> bool:
@@ -156,7 +192,7 @@ def get_aact_connection(db_params: Dict[str, Union[str, int]] = DB_PARAMS) -> co
         print("Error:", error)
 
 
-def get_user_data(aact_query: str) -> pd.DataFrame:
+def get_user_data(aact_query: str, only_useful_cols: bool = True) -> pd.DataFrame:
     """
     Retrieves data from the AACT database for a specified table and schema.
 
@@ -186,11 +222,17 @@ def get_user_data(aact_query: str) -> pd.DataFrame:
     #    df.set_index('nct_id', inplace=True)
     # if "id" in df.columns:
     #    df.drop('id', axis=1, inplace=True)
-    
+    #extend the USEFUL_COLUMNS list with the columns that start with the table names
+    use_columns = USEFUL_COLUMNS.copy()
+    for table_name in USEFUL_TABLES:
+        use_columns.extend([col for col in df.columns if col.startswith(table_name)])
+
+    if only_useful_cols:
+        df = df[use_columns]
     return df
 
 
-def get_studies(aact_table: str = 'studies', aact_schema: str = 'ctgov', n_rows_limit: int = 10000) -> pd.DataFrame:
+def get_studies(aact_table: str = 'studies', aact_schema: str = 'ctgov', n_rows_limit: int = 10000, only_useful_cols: bool = True) -> pd.DataFrame:
     """
     Retrieves data from the AACT database for a specified table and schema.
 
@@ -224,7 +266,8 @@ def get_studies(aact_table: str = 'studies', aact_schema: str = 'ctgov', n_rows_
     #    df.set_index('nct_id', inplace=True)
     # if "id" in df.columns:
     #    df.drop('id', axis=1, inplace=True)
-    
+    if only_useful_cols:
+        df = df[USEFUL_COLUMNS]
     return df
 
 

@@ -2,7 +2,7 @@ from fastapi import FastAPI, Response, Form
 from fastapi.responses import HTMLResponse  # Import HTMLResponse
 import urllib.parse
 import html
-from alltrialsapp.base import get_studies, get_user_data, get_query_completion
+from alltrialsapp.base import get_studies, get_user_data, get_query_completion, remove_limit_from_sql
 app = FastAPI()
 
 
@@ -132,6 +132,10 @@ def home():
         <h3>Tell us what you want to search for in the clinical trials world?</h3>
         <form id="text_form">
             <textarea name="input_text" style="width: 400px; min-height: 100px;"></textarea> <!-- Adjust width and height -->
+            <br>
+            <label for="use_short_list">Use short list of columns:</label>
+            <input type="checkbox" id="use_short_list" name="use_short_list" checked>
+            <br>
             <button type="submit">Search</button>
         </form>
         <div id="result"></div>
@@ -139,14 +143,13 @@ def home():
     </html>
     """
 
-
 @app.post("/process_text", response_class=HTMLResponse)
-async def process_text(input_text: str = Form(...)):
+async def process_text(input_text: str = Form(...), use_short_list: bool = Form(...)):
     # Perform actions with the input text to get DataFrame (For demonstration purposes, assuming df is obtained)
     print(input_text)
     aact_query = get_query_completion(input_text)
     print(aact_query)  # Perform actions with the input text
-    df = get_user_data(aact_query=aact_query)
+    df = get_user_data(aact_query=aact_query, only_useful_cols=use_short_list)
 
     df_html = df.to_html(classes="compact-table")
     encoded_aact_query = urllib.parse.quote_plus(aact_query)
@@ -158,9 +161,9 @@ async def process_text(input_text: str = Form(...)):
     html_content = f"""
     <h4>RESULTING QUERY:</h4>
     <pre><code style="background-color: #f0f0f0">{escaped_query}</code></pre>
-    <button onclick="copyToClipboard()">Copy to Clipboard</button>
+    <button onclick="copyToClipboard()">Copy sql query Clipboard</button>
     <div>
-        <a href="{csv_route}" download="result.csv"><button>Download search results as CSV</button></a>
+        <a href="{csv_route}" download="result.csv"><button>Download FULL results as CSV</button></a>
     </div>
     <div id="result_data">{df_html}</div>
         <script>
@@ -185,15 +188,11 @@ async def process_text(input_text: str = Form(...)):
     return HTMLResponse(content=html_content)
 
 
-    # Return the DataFrame HTML content as the response
-    return HTMLResponse(content=html_content)
-
-
-
 @app.get("/download_csv", response_class=Response)
 async def download_csv(aact_query: str):
     # Perform actions with the input text to get DataFrame (For demonstration purposes, assuming df is obtained)
-    df = get_user_data(aact_query=aact_query)
+    aact_query_full = remove_limit_from_sql(aact_query)
+    df = get_user_data(aact_query=aact_query_full)
 
     # Convert DataFrame to CSV content
     csv_content = df.to_csv(index=False)
