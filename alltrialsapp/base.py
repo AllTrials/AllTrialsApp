@@ -23,7 +23,7 @@ DB_PARAMS: Dict[str, Union[str, int]] = {
 }
 
 USEFUL_COLUMNS = [
-    'completion_date_type', 'completion_date', 'primary_completion_month_year',
+    'nct_id', 'completion_date_type', 'completion_date', 'primary_completion_month_year',
     'primary_completion_date_type', 'primary_completion_date', 'target_duration',
     'study_type', 'acronym', 'baseline_population', 'brief_title', 'official_title',
     'overall_status', 'last_known_status', 'phase', 'enrollment', 'enrollment_type',
@@ -42,14 +42,16 @@ USEFUL_TABLES = ['studies','brief_summaries', 'calculated_values', 'eligibilitie
 USER_TRIGGER = "User provided text:\n"
 
 EXAMPLE_ALS = f"""{USER_TRIGGER}
-I want to check out all clinical trials related to ALS that have reached at least phase 3.
+I want to check out all clinical trials related to ALS and FTD that have reached at least phase 3.
 
 Correct sample answer:
 
 SELECT *
 FROM ctgov.studies
-WHERE (brief_title ILIKE '% ALS %' OR brief_title ILIKE 'ALS %' OR brief_title ILIKE '% ALS' OR brief_title = 'ALS')
-    AND (brief_title ILIKE '%amyotrophic lateral sclerosis%' OR brief_title ILIKE 'amyotrophic lateral sclerosis%' OR brief_title ILIKE '%amyotrophic lateral sclerosis' OR brief_title = 'amyotrophic lateral sclerosis')
+WHERE (brief_title ILIKE '% ALS %' OR brief_title ILIKE 'ALS %' OR brief_title ILIKE '% ALS' OR brief_title = 'ALS'
+    OR brief_title ILIKE '%amyotrophic lateral sclerosis%' OR brief_title ILIKE 'amyotrophic lateral sclerosis%' OR brief_title ILIKE '%amyotrophic lateral sclerosis' OR brief_title = 'amyotrophic lateral sclerosis')
+    AND (brief_title ILIKE '% FTD %' OR brief_title ILIKE 'FTD %' OR brief_title ILIKE '% FTD' OR brief_title = 'FTD' 
+    OR brief_title ILIKE '%frontotemporal dementia%' OR brief_title ILIKE 'frontotemporal dementia%' OR brief_title ILIKE '%frontotemporal dementia' OR brief_title = 'frontotemporal dementia')
     AND (phase ILIKE '%Phase 3%' OR phase ILIKE '%Phase 4%')
 LIMIT 100;
 """
@@ -65,11 +67,19 @@ You are responding to a user data request on a web app. The user intends to quer
 Your job is to convert the text provided by the user to a valid SQL query for the AACT PostgreSQL database.
 
 It is critical that the query you propose uses the correctly named tables and corresponding columns in the AACT CTGOV database.
-It is critical that the query is case-sensitive to acronyms and abbreviations.
 It is critical that you only return the SQL query and not the context.
+It is critical that the resulting sql query uses same the logic terms as in user statement.
 
-At your disposal are the following tables from the AACT database: {USEFUL_TABLES}
-Unless directed differently, use the CTGOV schema, return all columns, and limit the number of rows returned to 100.
+The primary resource at your disposal is the 'studies' table, which has the following columns: {USEFUL_COLUMNS}.
+In addition to 'studies' table, you can use the following tables: {USEFUL_TABLES}.
+When looking for text patterns, in addition on "brief_title" column from studies table, check the following tables their columns:
+
+"detaield_descriptions": ['description'],
+"eligibilities":['criteria'],
+"participant_flows":['recruitment_details', 'pre_assignment_details'],
+"brief_summaries":['description'],
+
+Unless directed differently, use the CTGOV schema, and limit the number of rows returned to 100.
 """
 
 PROMPTS_DICT = {
@@ -80,12 +90,16 @@ To achieve a sound response, conduct the following steps as you complete the tas
 {EXAMPLE_ALS}\n
 2. Chain of Thought: Review the user-provided text and comprehend the user's intent.
     a) What are the key terms user asks about, what are the key disease or drug terms?
-    b) Do the terms contain acronyms that should be exapnded or are there synonyms that should be also included?
-    c) Which tables in aact database are relevant to the user request and which columns in those tables could be relevant?
-    d) What logical operators should be used to combine the terms and columns to best match user input?
-3. Assemble: Develop 5 potential solutions to the user request in SQL query format.
+    b) Do the terms contain acronyms? If yes, expand acronyms to full terms and include both in the search.
+    c) Are there common synonyms for the terms? If yes, include them in the search too.
+    d) Which tables and columns in aact database are relevant to the determined set of terms and user request?
+    e) What logical operators should be used to combine the terms and columns to best match user input?
+3. Assemble: Develop 10 potential solutions to the user request in SQL query format.
 
-4. Aggregation: Compare the 5 proposed solutions and select the most common and likely correct one.
+4. Aggregation: Compare the 10 proposed solutions and select the one based on the following criteria:
+a) Is common among solutions
+b) Is most likely correct answer is user query
+c) is least restrictive or has the potential to show the most data.
 
 5. Report only the final solution in the form of an SQL query.
 
@@ -267,7 +281,7 @@ def get_studies(aact_table: str = 'studies', aact_schema: str = 'ctgov', n_rows_
     #    df.set_index('nct_id', inplace=True)
     # if "id" in df.columns:
     #    df.drop('id', axis=1, inplace=True)
-    if only_useful_cols:
+    if only_useful_cols and aact_table == 'studies':
         df = df[USEFUL_COLUMNS]
     return df
 
