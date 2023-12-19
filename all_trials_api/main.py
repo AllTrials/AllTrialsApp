@@ -89,6 +89,8 @@ async def example():
     """
     # Return HTML content as response
     return Response(content=html_content, media_type="text/html")
+
+
 @app.get("/textbox", response_class=HTMLResponse)
 def home():
     return """
@@ -176,6 +178,22 @@ async def process_text(input_text: str = Form(...), use_short_list: bool = Form(
 
     # Function to escape special HTML characters in the query
     escaped_query = html.escape(aact_query)
+    div_table_dispaly = """"""    # Add additional tables from AACT to display based on the nct_ids found in initial df studies table
+    li_entries = """"""
+    related_tables = ['brief_summaries', 'calculated_values', 'eligibilities', 'participant_flows', 'designs', 'detailed_descriptions']
+    nct_ids_studies = ','.join([f"'{nct_id}'" for nct_id in list(df.nct_id)])
+ 
+    for table in related_tables:
+        df_table = get_user_data(aact_query=f"SELECT * FROM {table} WHERE nct_id IN ({nct_ids_studies})", only_useful_cols=False)
+        df_table_html = df_table.to_html(classes="compact-table")
+        div_table_dispaly += f"""
+        <div id="{table}" class="tab-pane fade">
+        <h2>{table}</h2>
+        <div id="result_data">{df_table_html}</div>
+        </div>
+        """
+        li_entries += f"""<li><a data-toggle="tab" href="#{table}">{table}</a></li>"""
+
 
     html_content = f"""
     <h4>RESULTING QUERY:</h4>
@@ -184,7 +202,21 @@ async def process_text(input_text: str = Form(...), use_short_list: bool = Form(
     <div>
         <a href="{csv_route}" download="result.csv"><button>Download FULL results as CSV</button></a>
     </div>
-    <div id="result_data">{df_html}</div>
+    <!-- Tabbed interface for displaying tables -->
+    <ul class="nav nav-tabs">
+        <li class="active"><a data-toggle="tab" href="#studies">Studies</a></li>
+        {li_entries}
+    </ul>
+    <div class="tab-content">
+        <div id="studies" class="tab-pane fade in active">
+            <!-- Display 'Studies' table content -->
+            <div id="result_data">{df_html}</div>
+        </div>
+        {div_table_dispaly}
+    </div>
+
+    <!-- Existing HTML content after the tabbed interface -->
+
         <script>
         $(document).ready(function() {{
             $('#result_data table').DataTable(); // Enable DataTable on the table inside result_data div
