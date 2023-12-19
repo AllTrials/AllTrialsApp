@@ -37,7 +37,6 @@ async def studies(
     n_rows_limit: int = 100,
 ):
     df = get_studies(aact_table, aact_schema, n_rows_limit)
-    print(df)
     df_html = df.to_html(classes="table table-striped table-bordered")
     html_content = f"""
     <html>
@@ -67,7 +66,6 @@ async def example():
     aact_query = get_query_completion(EXAMPLE_TEXT)
     print(aact_query)
     df = get_user_data(aact_query=aact_query)
-    print(df)
     df_html = df.to_html(classes="table table-striped table-bordered")
     html_content = f"""
     <html>
@@ -167,9 +165,7 @@ def home():
 @app.post("/process_text", response_class=HTMLResponse)
 async def process_text(input_text: str = Form(...), use_short_list: bool = Form(...)):
     # Perform actions with the input text to get DataFrame (For demonstration purposes, assuming df is obtained)
-    print(input_text)
     aact_query = get_query_completion(input_text)
-    print(aact_query)  # Perform actions with the input text
     df = get_user_data(aact_query=aact_query, only_useful_cols=use_short_list)
 
     df_html = df.to_html(classes="compact-table")
@@ -184,6 +180,7 @@ async def process_text(input_text: str = Form(...), use_short_list: bool = Form(
     nct_ids_studies = ','.join([f"'{nct_id}'" for nct_id in list(df.nct_id)])
  
     for table in related_tables:
+        print("fetching matching additional data from: ", table)
         df_table = get_user_data(aact_query=f"SELECT * FROM {table} WHERE nct_id IN ({nct_ids_studies})", only_useful_cols=False)
         df_table_html = df_table.to_html(classes="compact-table")
         div_table_dispaly += f"""

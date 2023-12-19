@@ -41,7 +41,7 @@ USEFUL_TABLES = ['studies','brief_summaries', 'calculated_values', 'eligibilitie
 
 USER_TRIGGER = "User provided text:\n"
 
-EXAMPLE_ALS = f"""{USER_TRIGGER}
+EXAMPLE_ALS_AND_FTD = f"""{USER_TRIGGER}
 I want to check out all clinical trials related to ALS and FTD that have reached at least phase 3.
 
 Correct sample answer:
@@ -56,28 +56,58 @@ WHERE (brief_title ILIKE '% ALS %' OR brief_title ILIKE 'ALS %' OR brief_title I
 LIMIT 100;
 """
 
+EXAMPLE_NEGATIVE = f"""{USER_TRIGGER}
+I'd like to see all trials that are currently enrolling patients with ALS and FTD
+
+Correct sample answer:
+
+SELECT *
+FROM ctgov.studies
+WHERE (brief_title ILIKE '% ALS %' OR brief_title ILIKE 'ALS %' OR brief_title ILIKE '% ALS' OR brief_title = 'ALS'
+    OR brief_title ILIKE '%amyotrophic lateral sclerosis%' OR brief_title ILIKE 'amyotrophic lateral sclerosis%' OR brief_title ILIKE '%amyotrophic lateral sclerosis' OR brief_title = 'amyotrophic lateral sclerosis')
+    AND (brief_title ILIKE '% FTD %' OR brief_title ILIKE 'FTD %' OR brief_title ILIKE '% FTD' OR brief_title = 'FTD' 
+    OR brief_title ILIKE '%frontotemporal dementia%' OR brief_title ILIKE 'frontotemporal dementia%' OR brief_title ILIKE '%frontotemporal dementia' OR brief_title = 'frontotemporal dementia')
+    AND (overall_status = 'Recruiting' and overall_status NOT ILIKE '%Not%')
+LIMIT 100;
+"""
+
+EXAMPLE_ALS_OR_FTD = f"""{USER_TRIGGER}
+I want to check out all clinical trials related to ALS and FTD that have reached at least phase 3.
+
+Correct sample answer:
+
+SELECT *
+FROM ctgov.studies
+WHERE (brief_title ILIKE '% ALS %' OR brief_title ILIKE 'ALS %' OR brief_title ILIKE '% ALS' OR brief_title = 'ALS'
+    OR brief_title ILIKE '%amyotrophic lateral sclerosis%' OR brief_title ILIKE 'amyotrophic lateral sclerosis%' OR brief_title ILIKE '%amyotrophic lateral sclerosis' OR brief_title = 'amyotrophic lateral sclerosis')
+    OR (brief_title ILIKE '% FTD %' OR brief_title ILIKE 'FTD %' OR brief_title ILIKE '% FTD' OR brief_title = 'FTD' 
+    OR brief_title ILIKE '%frontotemporal dementia%' OR brief_title ILIKE 'frontotemporal dementia%' OR brief_title ILIKE '%frontotemporal dementia' OR brief_title = 'frontotemporal dementia')
+    AND (phase ILIKE '%Phase 3%' OR phase ILIKE '%Phase 4%')
+LIMIT 100;
+"""
+
+
 BASELINE_PROMPT = f"""
 Here is the context for the tasks to follow:
 
-Context:
 You are an SQL query assistant with deep knowledge of the AACT clinical trials database, tables, and schemas.
-
 You are responding to a user data request on a web app. The user intends to query the AACT database but has limited knowledge of the database schemas, tables, and SQL language.
-
 Your job is to convert the text provided by the user to a valid SQL query for the AACT PostgreSQL database.
 
-It is critical that the query you propose uses the correctly named tables and corresponding columns in the AACT CTGOV database.
-It is critical that you only return the SQL query and not the context.
-It is critical that the resulting sql query uses same the logic terms as in user statement.
+Key requirements:
+- the query you propose uses the correctly named tables and corresponding columns in the AACT CTGOV database.
+- you only return the SQL query and not the context.
+- the resulting sql query uses same the logic terms as in user statement.
 
-The primary resource at your disposal is the 'studies' table, which has the following columns: {USEFUL_COLUMNS}.
-In addition to 'studies' table, you can use the following tables: {USEFUL_TABLES}.
-When looking for text patterns, in addition on "brief_title" column from studies table, check the following tables their columns:
+Resources at your disposal:
+- The primary resource at your disposal is the 'studies' table, which has the following columns: {USEFUL_COLUMNS}.
+- In addition to 'studies' table, you can use the following tables: {USEFUL_TABLES}.
+- When looking for text patterns, in addition on "brief_title" column from studies table, check the following tables their columns:
 
-"detaield_descriptions": ['description'],
-"eligibilities":['criteria'],
-"participant_flows":['recruitment_details', 'pre_assignment_details'],
-"brief_summaries":['description'],
+    "detaield_descriptions": ['description'],
+    "eligibilities":['criteria'],
+    "participant_flows":['recruitment_details', 'pre_assignment_details'],
+    "brief_summaries":['description'],
 
 Unless directed differently, use the CTGOV schema, and limit the number of rows returned to 100.
 """
@@ -87,13 +117,17 @@ PROMPTS_DICT = {
     "medprompt": f"""{BASELINE_PROMPT}\n
 To achieve a sound response, conduct the following steps as you complete the task:
 1. In-Context Learning: Examine this example of a simple plausible solution:
-{EXAMPLE_ALS}\n
+- {EXAMPLE_ALS_AND_FTD}\n
+- {EXAMPLE_ALS_OR_FTD}\n
+- {EXAMPLE_NEGATIVE}\n
+
 2. Chain of Thought: Review the user-provided text and comprehend the user's intent.
     a) What are the key terms user asks about, what are the key disease or drug terms?
     b) Do the terms contain acronyms? If yes, expand acronyms to full terms and include both in the search.
     c) Are there common synonyms for the terms? If yes, include them in the search too.
     d) Which tables and columns in aact database are relevant to the determined set of terms and user request?
     e) What logical operators should be used to combine the terms and columns to best match user input?
+    f) Are there any negation statements in the user input? What is the best way to handle them in SQL?
 3. Assemble: Develop 10 potential solutions to the user request in SQL query format.
 
 4. Aggregation: Compare the 10 proposed solutions and select the one based on the following criteria:
@@ -132,7 +166,10 @@ def check_aact_query(aact_query: str) -> bool:
     This function checks if the aact_query is a valid sql query
     to the aact database.
     """
-    print(f"Checking query: \n{aact_query}")
+    print(f"Checking query:")
+    print("------------------------------------------") 
+    print(f"{aact_query}\n")
+    print("------------------------------------------") 
     
     try:
         conn = get_aact_connection()
@@ -140,14 +177,15 @@ def check_aact_query(aact_query: str) -> bool:
         cursor.execute(aact_query)
         result = cursor.fetchall()
         conn.close()
-        print("Success \n")
+        
         if len(result) > 0:
+            print(f"\n {dt.now()}:  SUCCESS: data found \n")
             return True
         else:
             assert False
     
     except:
-        print("Failed to get data: Trying a different approach... \n")
+        print(f"Failed to get data: Trying a different approach... \n")
         return False
     
 
@@ -159,7 +197,10 @@ def get_query_completion(aact_query: str, n_tries :int = 10) -> str:
     prompt_prefix = PROMPTS_DICT["medprompt"]
     ##It is also important that the query is flexible enough to synonims and abbreviations for the searched phrase.
     prompt = f"{prompt_prefix}{aact_query}"
-    print(prompt)
+    print(f"{dt.now()}: Generating daat query using medPrompt: \n")
+    print("############################")
+    print(f"{prompt}")
+    print("############################")
     aact_query_msg_content = None
     for n in tqdm(range(n_tries)):
         client = OpenAI(
@@ -182,8 +223,8 @@ def get_query_completion(aact_query: str, n_tries :int = 10) -> str:
         if check_aact_query(aact_query_msg_content):
             break
     if n == n_tries:
-        print("Could not convert the text to a valid sql query.")
-        return False
+        print(f"{dt.now()}: Could not convert the text to a valid sql query, returning empty query")
+        return "SELECT * FROM ctgov.studies LIMIT 0;"
     else:    
         return aact_query_msg_content
 
@@ -201,10 +242,9 @@ def get_aact_connection(db_params: Dict[str, Union[str, int]] = DB_PARAMS) -> co
     try:
         conn = psycopg2.connect(**db_params)
         cursor = conn.cursor()
-        print("Connected to the database!")
         return conn
     except (Exception, psycopg2.DatabaseError) as error:
-        print("Error:", error)
+        print("Database Connection Error:", error)
 
 
 def get_user_data(aact_query: str, only_useful_cols: bool = True) -> pd.DataFrame:
