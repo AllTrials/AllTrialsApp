@@ -1,10 +1,10 @@
 # Quickstart: 
-After installing thwe app localy, enter the followin url to your browser:
+After installing the app locally, enter the following url to your browser:
 
     http://127.0.0.1:8000/textbox
 
 # Install Locally
-Using your favourit terminal:
+Using your favorite terminal:
 
 1. Clone the repo:
     
@@ -20,7 +20,7 @@ Using your favourit terminal:
 https://platform.openai.com/docs/quickstart?context=python
 
 4. After registering your api-key don't forget to source your .rc file that you have edited with the new api key. 
-Settings vary, but in most cases in termina run:
+Settings vary, but in majority of cases the following will do:
 - For mac users: 
 
         source ~/.zshrc
@@ -31,7 +31,7 @@ Settings vary, but in most cases in termina run:
 
 - For windows users: Good luck.
 
-5. Start the app server: 
+5. Start the app server using uvicorn: 
 
         uvicorn all_trials_api.main:app --reload
 
@@ -53,19 +53,11 @@ For information about uvicorn, see the [uvicorn documentation](https://www.uvico
 
 ## Example usage of a quick table access lookup:
 
-This feature uses chatGPT features and medprompt to conduct sql queries for you.
-**To use the textbox feature you will have to setup an openAI API KEY**
-Follow the instruction below to get the API KEY working
-> https://platform.openai.com/docs/quickstart?context=python
-
-Under this url you can try our free text search. 
-
-It is our first attempt to incorporate chatGPT like features via the openai python package. 
+The app uses chatGPT features and medprompt to conduct sql queries for you.
 
 Upon hitting the "search" button the app will perform up to 10 attempts to generate a valid query to the database and it if finds a valid query it will return a downloadable dataframe.
 
 This is still very much imperfect and requires better prompt engineering. Current baseline prompt looks as follows:
-
 
     Set model temperature to 0.8
     Here is the context for the tasks to follow.
