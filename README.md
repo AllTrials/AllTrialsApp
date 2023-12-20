@@ -1,12 +1,38 @@
-# All Trails APP
+# Quickstart: 
+After installing thwe app localy, enter the followin url to your browser:
 
-To run locally:
+    `http://127.0.0.1:8000/textbox`
+
+# Install Locally
+Using your favourit terminal:
 
 1. Clone the repo
-2. Run `python3 -m pip install -r requirements.txt`
-3. Run `uvicorn all_trials_api.main:app --reload`
-4. Open `http://127.0.0.1:8000/` in your browser
+> git clone https://github.com/AllTrials/AllTrialsApp.git
+2. Run 
+> `python3 -m pip install -r requirements.txt`
+3. Register your personal openai api key following the instruction in the link below: 
+- Yes you need to pay for it.
+- No, it's not expensive. 1usd will let you explore all app features
 
+> https://platform.openai.com/docs/quickstart?context=python
+
+4. After registering your api-key don;t forget to source your .rc file that you have edited with the new api key. 
+Settings vary, but in most cases:
+- For mac users: 
+> source ~/.zshrc 
+- For linux users: 
+> source ~/.bashrc
+- For windows users: Good luck.
+
+5. Run 
+> `uvicorn all_trials_api.main:app --reload`
+6. Open the main app component in a browser under the following url: `http://127.0.0.1:8000/textbox`
+
+# Prerequisits
+Python 3.8+
+git
+
+# Additional resources
 To see auto generated docs, go to `http://127.0.0.1:8000/docs` or `http://127.0.0.1:8000/redoc`.
 This API documentation is generated automatically from the code and will update as we modify and add endpoints and query parameters. Neat, eh?
 
@@ -15,28 +41,6 @@ For information about uvicorn, see the [uvicorn documentation](https://www.uvico
 
 
 ## Example usage of a quick table access lookup:
-
-### View studies table
-> http://127.0.0.1:8000/studies/ 
-
-This url would by default fetch the first 100 records from studies table from ctgov schema
-
-### View a different table
-You can change the table by changing the url:
-
-> http://127.0.0.1:8000/studies/?aact_table=conditions. 
-
-This would fetch the first 100 records from conditions table
-
-### Change default display parameters
-You can change the default parameters by changing the url as follows:
-
-> http://127.0.0.1:8000/studies/?aact_table=conditions&n_rows_limit=1000&aact_schema=ctgov. 
-
-This would fetch the first 100 records from conditions table ensuring the ctgov schema
-
-## Free text query and download button
-> http://127.0.0.1:8000/textbox
 
 This feature uses chatGPT features and medprompt to conduct sql queries for you.
 **To use the textbox feature you will have to setup an openAI API KEY**
@@ -81,3 +85,4 @@ It then is improved with the medprompt approach as listed here:
 , if you have any idea how to improve it, feel free to add your statements:
 
 Good luck, have fun.
+
