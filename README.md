@@ -10,9 +10,9 @@ Using your favourit terminal:
     
         git clone https://github.com/AllTrials/AllTrialsApp.git
 
-2. Run:
+2. Install required python packages:
 
-        python3 -m pip install -r requirements.txt
+        python -m pip install -r requirements.txt
 
 3. Register your personal openai api key following the instruction in the link below: 
 - Yes, you need to pay for it.
@@ -31,7 +31,7 @@ Settings vary, but in most cases in termina run:
 
 - For windows users: Good luck.
 
-5. Run 
+5. Start the app server: 
 
         uvicorn all_trials_api.main:app --reload
 
@@ -39,8 +39,9 @@ Settings vary, but in most cases in termina run:
 http://127.0.0.1:8000/textbox
 
 # Prerequisits
-Python 3.8+
-git
+- Python 3.8+
+- pip
+- git
 
 # Additional resources
 To see auto generated docs, go to `http://127.0.0.1:8000/docs` or `http://127.0.0.1:8000/redoc`.
