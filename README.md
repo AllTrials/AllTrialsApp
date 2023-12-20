@@ -93,6 +93,11 @@ Good luck and have fun!
     
 https://github.com/AllTrials/AllTrialsApp/issues
 
+For unexpected search behavior please add
+a) The initial prompt that you searched for
+b) resulting sql query
+c) A brief description of what is wrong with the results
+
 
 # Additional resources
 To see auto generated docs, go to `http://127.0.0.1:8000/docs` or `http://127.0.0.1:8000/redoc`.
