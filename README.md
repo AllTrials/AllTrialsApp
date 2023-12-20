@@ -7,9 +7,13 @@ After installing thwe app localy, enter the followin url to your browser:
 Using your favourit terminal:
 
 1. Clone the repo
-> git clone https://github.com/AllTrials/AllTrialsApp.git
+    
+    git clone https://github.com/AllTrials/AllTrialsApp.git
+
 2. Run 
-> `python3 -m pip install -r requirements.txt`
+
+    python3 -m pip install -r requirements.txt
+
 3. Register your personal openai api key following the instruction in the link below: 
 - Yes you need to pay for it.
 - No, it's not expensive. 1usd will let you explore all app features
