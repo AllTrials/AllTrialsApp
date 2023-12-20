@@ -8,7 +8,7 @@ Using your favourit terminal:
 
 1. Clone the repo
     
-    git clone https://github.com/AllTrials/AllTrialsApp.git
+    `git clone https://github.com/AllTrials/AllTrialsApp.git`
 
 2. Run 
 
