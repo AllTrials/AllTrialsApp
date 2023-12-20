@@ -1,8 +1,53 @@
-# Quickstart: 
-After installing the app locally, enter the following url to your browser:
 
-    http://127.0.0.1:8000/textbox
+# Description
 
+This application utilizes ChatGPT features and MedPrompt to execute SQL queries on the AACT clinical trials database. It accepts free-form text input that can include task descriptions and optional code. The app is designed to be user-friendly and does not require prior knowledge of the database or SQL language.
+
+Upon clicking the "Search" button, the app will make up to 10 attempts to generate a valid query based on the provided text. If a valid query is found, it will return a downloadable dataframe.
+
+## Limitations
+This app is a work in progress and requires further refinement in prompt engineering. Like most tools using Language Models (LLMs), there may be a degree of uncertainty in the results. If the initial outcome does not meet expectations, consider repeating the search. To save a particular search outcome for future use, you can:
+- Download the full dataframe as a CSV file
+- Copy the generated SQL query
+
+## Current Baseline Prompt
+The initial prompt used by the app is:
+
+    Set model temperature to 0.8
+    Here is the context for the tasks to follow.
+    
+    Context:
+    You are an sql query assistant. 
+    You have deep knowledge of the AACT clinical trials database, tables and schemas.
+    
+    You are responding to a user data request on a web app.
+    User intends to query the AACT database but has limited knowledge of the database schemas, tables and sql language. 
+    
+    Your job is to convert the text provided by the user to a valid sql query to the aact postgres database.
+    
+    It is critical that the query you propose uses the correctly named tables and corresponding columns in the aact ctgov database.
+    It is critical that the query is case sensitive to acronyms and abbreviations.
+    It is crtical that you only return the sql query and not the context.
+    
+    At your disposal are the following tables from the aact database: 
+    [studies, brief_summaries, calculated_values, eligibilities, participant_flows, designs, detailed_descriptions]
+    Unless directed differently use ctgov schema, return all columns and limit the number of rows returned to 1000.
+    
+    User provided text:
+    
+
+This prompt has been enhanced using the MedPrompt approach. [Learn more about it here](https://www.microsoft.com/en-us/research/blog/steering-at-the-frontier-extending-the-power-of-prompting/).
+
+If you have any ideas on how to improve it, feel free to contribute your suggestions.
+
+Good luck and have fun!
+
+# Quickstart
+
+After installing the app locally, access it by entering the following URL in your browser:
+
+        http://127.0.0.1:8000/textbox
+    
 # Install Locally
 Using your favorite terminal:
 
@@ -49,43 +94,4 @@ This API documentation is generated automatically from the code and will update 
 
 For information about FastAPI, see the [FastAPI documentation](https://fastapi.tiangolo.com/).
 For information about uvicorn, see the [uvicorn documentation](https://www.uvicorn.org/).
-
-
-## Example usage of a quick table access lookup:
-
-The app uses chatGPT features and medprompt to conduct sql queries for you.
-
-Upon hitting the "search" button the app will perform up to 10 attempts to generate a valid query to the database and it if finds a valid query it will return a downloadable dataframe.
-
-This is still very much imperfect and requires better prompt engineering. Current baseline prompt looks as follows:
-
-    Set model temperature to 0.8
-    Here is the context for the tasks to follow.
-    
-    Context:
-    You are an sql query assistant. 
-    You have deep knowledge of the AACT clinical trials database, tables and schemas.
-    
-    You are responding to a user data request on a web app.
-    User intends to query the AACT database but has limited knowledge of the database schemas, tables and sql language. 
-    
-    Your job is to convert the text provided by the user to a valid sql query to the aact postgres database.
-    
-    It is critical that the query you propose uses the correctly named tables and corresponding columns in the aact ctgov database.
-    It is critical that the query is case sensitive to acronyms and abbreviations.
-    It is crtical that you only return the sql query and not the context.
-    
-    At your disposal are the following tables from the aact database: 
-    [studies, brief_summaries, calculated_values, eligibilities, participant_flows, designs, detailed_descriptions]
-    Unless directed differently use ctgov schema, return all columns and limit the number of rows returned to 1000.
-    
-    User provided text:
-    
-It then is improved with the medprompt approach as listed here:
-    
-    https://www.microsoft.com/en-us/research/blog/steering-at-the-frontier-extending-the-power-of-prompting/
-
-, if you have any idea how to improve it, feel free to add your statements:
-
-Good luck, have fun.
 
