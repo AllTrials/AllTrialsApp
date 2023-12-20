@@ -86,40 +86,50 @@ WHERE (brief_title ILIKE '% ALS %' OR brief_title ILIKE 'ALS %' OR brief_title I
 LIMIT 100;
 """
 
+EXAMPLE_OTHER_TABLES = f"""{USER_TRIGGER}
+find all trials that were conducted in 2 or more facilities. Also restrict them to studies including only males.
+
+SELECT s.*
+FROM ctgov.studies AS s
+INNER JOIN ctgov.calculated_values AS cv ON s.nct_id = cv.nct_id
+INNER JOIN ctgov.eligibilities AS e ON s.nct_id = e.nct_id
+WHERE cv.number_of_facilities >= 2
+AND e.gender ILIKE '%Male%'
+LIMIT 100;
+"""
 
 BASELINE_PROMPT = f"""
-Here is the context for the tasks to follow:
-
 You are an SQL query assistant with deep knowledge of the AACT clinical trials database, tables, and schemas.
-You are responding to a user data request on a web app. The user intends to query the AACT database but has limited knowledge of the database schemas, tables, and SQL language.
-Your job is to convert the text provided by the user to a valid SQL query for the AACT PostgreSQL database.
+You are responding to a user data request on a web app. 
+The user intends to query the AACT database but has limited knowledge of the database schemas, tables, and SQL language.
+Your job is to convert the text provided by the user to a valid postgres SQL query for the AACT database using the ctgov schema.
 
 Key requirements:
 - the query you propose uses the correctly named tables and corresponding columns in the AACT CTGOV database.
 - you only return the SQL query and not the context.
-- the resulting sql query uses same the logic terms as in user statement.
+- the resulting sql query uses the same logic terms as in user statement.
 
 Resources at your disposal:
 - The primary resource at your disposal is the 'studies' table, which has the following columns: {USEFUL_COLUMNS}.
-- In addition to 'studies' table, you can use the following tables: {USEFUL_TABLES}.
-- When looking for text patterns, in addition on "brief_title" column from studies table, check the following tables their columns:
-
+- In addition to 'studies' table use the following tables: {USEFUL_TABLES}.
+- When looking for text patterns, in addition on "brief_title" column from studies table, include following tables and their columns:
     "detaield_descriptions": ['description'],
     "eligibilities":['criteria'],
     "participant_flows":['recruitment_details', 'pre_assignment_details'],
     "brief_summaries":['description'],
 
-Unless directed differently, use the CTGOV schema, and limit the number of rows returned to 100.
+Unless directed differently, limit the number of rows returned to 100.
 """
 
 PROMPTS_DICT = {
     "default": f"{BASELINE_PROMPT}{USER_TRIGGER}",
     "medprompt": f"""{BASELINE_PROMPT}\n
 To achieve a sound response, conduct the following steps as you complete the task:
-1. In-Context Learning: Examine this example of a simple plausible solution:
+1. In-Context Learning: Examine the examples of a plausible solution:
 - {EXAMPLE_ALS_AND_FTD}\n
 - {EXAMPLE_ALS_OR_FTD}\n
 - {EXAMPLE_NEGATIVE}\n
+- {EXAMPLE_OTHER_TABLES}\n
 
 2. Chain of Thought: Review the user-provided text and comprehend the user's intent.
     a) What are the key terms user asks about, what are the key disease or drug terms?
@@ -166,9 +176,9 @@ def check_aact_query(aact_query: str) -> bool:
     This function checks if the aact_query is a valid sql query
     to the aact database.
     """
-    print(f"Checking query:")
+    print(f"\n {dt.now()}: Checking query:")
     print("------------------------------------------") 
-    print(f"{aact_query}\n")
+    print(f"{aact_query}")
     print("------------------------------------------") 
     
     try:
@@ -197,10 +207,10 @@ def get_query_completion(aact_query: str, n_tries :int = 10) -> str:
     prompt_prefix = PROMPTS_DICT["medprompt"]
     ##It is also important that the query is flexible enough to synonims and abbreviations for the searched phrase.
     prompt = f"{prompt_prefix}{aact_query}"
-    print(f"{dt.now()}: Generating daat query using medPrompt: \n")
-    print("############################")
+    print(f"{dt.now()}: Generating data query using medPrompt: \n")
+    print("################## PROMPT START ########################")
     print(f"{prompt}")
-    print("############################")
+    print("################## PROMPT END   ########################")
     aact_query_msg_content = None
     for n in tqdm(range(n_tries)):
         client = OpenAI(

@@ -147,13 +147,15 @@ def home():
         <!-- Image tag to display the PNG image -->
         <img id="logo" src="/static/ct_sbm_720.png" alt="Logo">
         
-        <h3>Tell us what you want to search for in the clinical trials world?</h3>
+        <h3>What do you want to search for, in the clinical trials world?</h3>
         <form id="text_form">
             <textarea name="input_text" style="width: 400px; min-height: 100px;"></textarea> <!-- Adjust width and height -->
             <br>
+            <p> The app uses the openai's GPT model and our medprompt <br>
+              to convert your ask to an appropriate query to AACT database </p>
+        
             <label for="use_short_list">Use short list of columns:</label>
             <input type="checkbox" id="use_short_list" name="use_short_list" checked>
-            <br>
             <button type="submit">Search</button>
         </form>
         <div id="result"></div>
@@ -163,7 +165,7 @@ def home():
 
 
 @app.post("/process_text", response_class=HTMLResponse)
-async def process_text(input_text: str = Form(...), use_short_list: bool = Form(...)):
+async def process_text(input_text: str = Form(...), use_short_list: bool = Form(default=False)):
     # Perform actions with the input text to get DataFrame (For demonstration purposes, assuming df is obtained)
     aact_query = get_query_completion(input_text)
     df = get_user_data(aact_query=aact_query, only_useful_cols=use_short_list)
@@ -195,7 +197,7 @@ async def process_text(input_text: str = Form(...), use_short_list: bool = Form(
     html_content = f"""
     <h4>RESULTING QUERY:</h4>
     <pre><code style="background-color: #f0f0f0">{escaped_query}</code></pre>
-    <button onclick="copyToClipboard()">Copy sql query Clipboard</button>
+    <button onclick="copyToClipboard()">Copy sql query to clipboard</button>
     <div>
         <a href="{csv_route}" download="result.csv"><button>Download FULL results as CSV</button></a>
     </div>
