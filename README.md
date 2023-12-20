@@ -12,24 +12,28 @@ Using your favourit terminal:
 
 2. Run"
 
-    `python3 -m pip install -r requirements.txt`
+        `python3 -m pip install -r requirements.txt`
 
 3. Register your personal openai api key following the instruction in the link below: 
 - Yes, you need to pay for it.
 - No, it's not expensive. 1$ will let you explore all app features
-    https://platform.openai.com/docs/quickstart?context=python
+        https://platform.openai.com/docs/quickstart?context=python
 
 4. After registering your api-key don't forget to source your .rc file that you have edited with the new api key. 
 Settings vary, but in most cases in termina run:
 - For mac users: 
-    `source ~/.zshrc`
+
+        `source ~/.zshrc`
+
 - For linux users: 
-    `source ~/.bashrc`
+    
+        `source ~/.bashrc`
+
 - For windows users: Good luck.
 
 5. Run 
 
-    `uvicorn all_trials_api.main:app --reload`
+        `uvicorn all_trials_api.main:app --reload`
 
 6. Open the main app component in a browser under the following url: `http://127.0.0.1:8000/textbox`
 
