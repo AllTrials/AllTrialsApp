@@ -257,7 +257,7 @@ def get_aact_connection(db_params: Dict[str, Union[str, int]] = DB_PARAMS) -> co
         print("Database Connection Error:", error)
 
 
-def get_user_data(aact_query: str, only_useful_cols: bool = True) -> pd.DataFrame:
+def get_query_data(aact_query: str, only_useful_cols: bool = True) -> pd.DataFrame:
     """
     Retrieves data from the AACT database for a specified table and schema.
 

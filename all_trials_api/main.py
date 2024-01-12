@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse  # Import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import urllib.parse
 import html
-from alltrialsapp.base import get_studies, get_user_data, get_query_completion, remove_limit_from_sql
+from alltrialsapp.base import get_studies, get_query_data, get_query_completion, remove_limit_from_sql
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -65,7 +65,7 @@ async def example():
     print(EXAMPLE_TEXT)
     aact_query = get_query_completion(EXAMPLE_TEXT)
     print(aact_query)
-    df = get_user_data(aact_query=aact_query)
+    df = get_query_data(aact_query=aact_query)
     df_html = df.to_html(classes="table table-striped table-bordered")
     html_content = f"""
     <html>
@@ -168,7 +168,7 @@ def home():
 async def process_text(input_text: str = Form(...), use_short_list: bool = Form(default=False)):
     # Perform actions with the input text to get DataFrame (For demonstration purposes, assuming df is obtained)
     aact_query = get_query_completion(input_text)
-    df = get_user_data(aact_query=aact_query, only_useful_cols=use_short_list)
+    df = get_query_data(aact_query=aact_query, only_useful_cols=use_short_list)
 
     df_html = df.to_html(classes="compact-table")
     encoded_aact_query = urllib.parse.quote_plus(aact_query)
@@ -183,7 +183,7 @@ async def process_text(input_text: str = Form(...), use_short_list: bool = Form(
  
     for table in related_tables:
         print("fetching matching additional data from: ", table)
-        df_table = get_user_data(aact_query=f"SELECT * FROM {table} WHERE nct_id IN ({nct_ids_studies})", only_useful_cols=False)
+        df_table = get_query_data(aact_query=f"SELECT * FROM {table} WHERE nct_id IN ({nct_ids_studies})", only_useful_cols=False)
         df_table_html = df_table.to_html(classes="compact-table")
         div_table_dispaly += f"""
         <div id="{table}" class="tab-pane fade">
@@ -242,7 +242,7 @@ async def process_text(input_text: str = Form(...), use_short_list: bool = Form(
 async def download_csv(aact_query: str):
     # Perform actions with the input text to get DataFrame (For demonstration purposes, assuming df is obtained)
     aact_query_full = remove_limit_from_sql(aact_query)
-    df = get_user_data(aact_query=aact_query_full)
+    df = get_query_data(aact_query=aact_query_full)
 
     # Convert DataFrame to CSV content
     csv_content = df.to_csv(index=False)
